@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_save, pre_delete, m2m_changed
 from django.dispatch import receiver
 from .models import Host, HostGroup, NAGIOS_DIR
 import subprocess
@@ -7,6 +7,9 @@ import subprocess
 # -----------------------------------------------------------------
 # Signals de Host
 # -----------------------------------------------------------------
+def host_m2m_changed(sender, instance:Host, **kwargs):
+    instance.create_nagios_cfg()
+
 @receiver(post_save, sender=Host)
 def update_nagios_hosts(sender, instance:Host, created, **kwargs):
     instance.create_nagios_cfg()
@@ -23,7 +26,8 @@ def delete_nagios_hosts(sender, instance:Host, **kwargs):
     # reinicia nagios
     subprocess.run('systemctl restart nagios', shell=True)
 
-
+m2m_changed.connect(host_m2m_changed, sender=Host.hostgroups.through)
+m2m_changed.connect(host_m2m_changed, sender=Host.parents.through)
 
 # -----------------------------------------------------------------
 # Signals de HostGroup

@@ -1,8 +1,5 @@
 from django.db import models
 
-# from django.db.models.signals import post_save, pre_delete
-# from django.dispatch import receiver
-
 from decouple import config
 import subprocess
 
@@ -29,13 +26,11 @@ class Host(models.Model):
         db_column    = 'NagHstDsc',
     )
 
-    # TODO hostgroup debe soportar multiples valores
-    parents = models.ForeignKey(
-        'nagios.Host', 
-        verbose_name = 'Padre', 
-        on_delete    = models.SET_NULL,
-        db_column    = 'NagHstParID',
-        null=True, blank=True
+    parents = models.ManyToManyField(
+        to= 'nagios.Host',
+        verbose_name= 'Parents',
+        related_name= 'host_parents',
+        blank= True
     )
 
     template = models.CharField(
@@ -44,14 +39,13 @@ class Host(models.Model):
         db_column    = 'NagHstTem',
     )
 
-    # TODO hostgroup debe soportar multiples valores
-    hostgroup = models.ForeignKey(
-        'nagios.HostGroup',
-        verbose_name = 'Hostgroup', 
-        on_delete    = models.SET_NULL,
-        db_column    = 'NagHstGrpID',
-        null=True, blank=True
+    hostgroups = models.ManyToManyField(
+        to= 'nagios.HostGroup',
+        verbose_name= 'Hostgroups',
+        related_name= 'host_groups',
+        blank= True
     )
+
 
     def __str__(self):
         return self.hostname
@@ -65,11 +59,11 @@ class Host(models.Model):
             'use'      : self.template
         }
 
-        if self.parents and write_parent:
-            cfg_fields['parents'] = self.parents
+        if self.parents.count() and write_parent:
+            cfg_fields['parents'] = ', '.join([parent.hostname for parent in self.parents.all()])
 
-        if self.hostgroup and write_hostgroup:
-            cfg_fields['hostgroups'] = self.hostgroup
+        if self.hostgroups.count() and write_hostgroup:
+            cfg_fields['hostgroups'] = ', '.join([group.nombre for group in self.hostgroups.all()])
         
         cfg_content = 'define host {\n'
         for key, value in cfg_fields.items():
