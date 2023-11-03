@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'nagios.apps.NagiosConfig'
+    'nagios.apps.NagiosConfig',
+    'core.apps.CoreConfig'
 ]
 
 MIDDLEWARE = [
