@@ -69,6 +69,14 @@ class Equipo(models.Model):
         blank= True
     )
 
+    ip = models.GenericIPAddressField(
+        verbose_name = 'IP',
+        unique       = True,
+        protocol     = 'IPv4',
+        null= True, blank=True,
+        db_column    = 'EquIP'
+    )
+
     en_monitoreo = models.BooleanField(
         verbose_name= 'En monitoreo',
         default= False,
@@ -77,3 +85,14 @@ class Equipo(models.Model):
 
     def __str__(self) -> str:
         return self.nombre
+    
+    def clean(self) -> None:
+        self.apto_para_monitoreo()
+        return super().clean()
+        
+    
+    def apto_para_monitoreo(self):
+        if not self.ip and self.en_monitoreo:
+            raise ValidationError(
+                ('Para ingresar el equipo a monitoreo debe indicar una direccion IPv4 valida'),
+            )   

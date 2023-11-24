@@ -7,12 +7,15 @@ class CiudadAdmin(admin.ModelAdmin):
 
 @admin.register(Equipo)
 class EquipoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'nombre', 'site', 'obten_ciudad', 'en_monitoreo')
+    list_display = ('id', 'nombre', 'site', 'obten_ciudad', 'ip', 'en_monitoreo')
     list_filter = ('site', 'en_monitoreo')
 
     @admin.display(description='Ubicacion')
     def obten_ciudad(self, obj):
-        return obj.site.ciudad.nombre
+        try:
+            return obj.site.ciudad.nombre
+        except AttributeError:
+            return str()
 
 @admin.register(Site)
 class AdminSite(admin.ModelAdmin):
