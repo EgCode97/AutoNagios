@@ -44,7 +44,7 @@ def delete_nagios_hostgroups(sender, instance:Host, **kwargs):
     # Actualiza la configuracion de los hosts cuyo parent es el host que ha sido eliminado 
     # Es necesario indicar write_hostgroup=False ya que por dispararse antes de eliminar el hostgroup de la db
     # aquellos hosts que lo referencien aun no tendran el valor del FK en NULL
-    [host.create_nagios_cfg(write_hostgroup=False) for host in Host.objects.filter(hostgroup=instance)]
+    [host.create_nagios_cfg(write_hostgroup=False) for host in Host.objects.filter(hostgroups=instance)]
     
     # reinicia nagios
     subprocess.run('systemctl restart nagios', shell=True)
