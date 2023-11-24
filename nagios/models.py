@@ -1,9 +1,16 @@
 from django.db import models
+from core.models import Equipo
 
 from decouple import config
 import subprocess
 
 NAGIOS_DIR = config('NAGIOS_DIR')
+
+# TODO Validaciones
+# [ ] Host -> hostname sin espacios ni caracteres especiales
+# [ ] HostGroup -> hostname sin espacios ni caracteres especiales
+
+
 
 class Host(models.Model):
     ip = models.GenericIPAddressField(
@@ -36,6 +43,7 @@ class Host(models.Model):
     template = models.CharField(
         verbose_name = 'Plantilla a utilizar',
         max_length   = 50,
+        default      = 'linux-server',
         db_column    = 'NagHstTem',
     )
 
@@ -46,6 +54,13 @@ class Host(models.Model):
         blank= True
     )
 
+    equipo = models.ForeignKey(
+        to=Equipo, 
+        on_delete=models.CASCADE,
+        null= True, blank= True,
+        unique= True,
+        db_column= 'NagHstEquID'
+    )
 
     def __str__(self):
         return self.hostname
