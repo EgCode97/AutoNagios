@@ -89,7 +89,6 @@ class Host(models.Model):
         with open(f'{NAGIOS_DIR + self.hostname}.cfg', 'w') as f:
             f.write(cfg_content)
 
-        subprocess.run('systemctl restart nagios', shell=True)
 
 
 
@@ -120,4 +119,3 @@ class HostGroup(models.Model):
         with open(f'{NAGIOS_DIR}{self.nombre}.cfg', 'w') as f:
             f.write(cfg_str)
 
-        subprocess.run('systemctl restart nagios', shell=True)
