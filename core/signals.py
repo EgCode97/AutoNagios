@@ -75,7 +75,7 @@ def elimina_site_hostgroup(sender, instance:Site, **kwargs):
 # -----------------------------------------------------------------
 # Signals de Equipo
 # -----------------------------------------------------------------
-@receiver(pre_save, sender=Equipo)
+@receiver(post_save, sender=Equipo)
 def actualiza_equipo(sender, instance:Equipo, **kwargs):
     "Toma el equipo modificado y si se marco como 'en monitoreo' cre un host de nagios"
     if instance.en_monitoreo:
@@ -83,16 +83,26 @@ def actualiza_equipo(sender, instance:Equipo, **kwargs):
         try:
             host = nagios_models.Host.objects.get(equipo__id=instance.id)
         except nagios_models.Host.DoesNotExist:
-            host = nagios_models.Host(
+            host = nagios_models.Host.objects.create(
                 ip= instance.ip,
                 hostname= instance.nombre,
                 alias= instance.descripcion,
                 equipo= instance
             )
-            host.save()
-        # TODO agrega parents
-        # NOTE agregar los equipos padres que esten asociados a un host
+
         host.hostgroups.set(hostgroups, clear=True)
+
+        equipos_padres = instance.padres.all()
+        hosts_padres = nagios_models.Host.objects.filter(equipo__in=equipos_padres)
+        host.parents.set(hosts_padres)
+
+        # Actualiza los parents de hosts cuyos equipos asociados tengan como padre un equipo
+        # que se acaba de agregar al monitoreo
+        equipos_hijos = Equipo.objects.filter(padres=instance, en_monitoreo=True)
+        for equipo in equipos_hijos:
+                nagios_models.Host.objects.get(equipo=equipo).parents.add(host)
+
+        subprocess.run('systemctl restart nagios', shell=True)
 
     else:
         try:
