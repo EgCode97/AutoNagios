@@ -161,3 +161,4 @@ cython_debug/
 
 # ignora el script para correr el servidor de pruebas
 run.sh
+*.conf
