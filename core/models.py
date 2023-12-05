@@ -1,5 +1,11 @@
+import subprocess
+from pathlib import Path
+from decouple import config
 from django.db import models
 from django.core.exceptions import ValidationError
+
+
+MONITOREO_TRAFICO_DIR = Path(config('DIR_MONITOREO_TRAFICO')).resolve()
 
 class Validadores:
     @staticmethod
@@ -83,6 +89,19 @@ class Equipo(models.Model):
         db_column= 'EquMon'
     )
 
+    monitorear_trafico = models.BooleanField(
+        verbose_name= 'Monitoreando trafico',
+        default= False,
+        db_column= 'EquMonTra'
+    )
+
+    comunidad_snmp = models.CharField(
+        verbose_name= 'Comunidad SNMP',
+        max_length= 40,
+        blank= True, null=True,
+        db_column= 'EquComSNMP'
+    )
+
     def __str__(self) -> str:
         return self.nombre
     
@@ -96,3 +115,32 @@ class Equipo(models.Model):
             raise ValidationError(
                 ('Para ingresar el equipo a monitoreo debe indicar una direccion IPv4 valida'),
             )   
+        
+        if self.monitorear_trafico and not (self.comunidad_snmp and self.ip and self.en_monitoreo):
+            raise ValidationError(
+                ('Para monitorear el trafico debe indicar una direccion IPv4 valida, la comunidad SNMP y agregarlo al monitoreo'),
+            )   
+        
+    def crear_cfg_monitoreo_trafico(self):
+        Dir_cfg = MONITOREO_TRAFICO_DIR / str(self.site.ciudad.id) / str(self.site.id)
+        Path.mkdir(Dir_cfg, parents=True, exist_ok=True)        
+
+        with open(config('BASE_CONF_MONITOREO_TRAFICO'), 'r') as f:
+            conf_base = f.read()
+
+        conf_base = conf_base.replace('__IP__', self.ip)
+        conf_base = conf_base.replace('__SNMPCOM__', self.comunidad_snmp)
+        conf_base = conf_base.replace('__NOMBRE__', self.site.ciudad.nombre)
+        conf_base = conf_base.replace('__EQUIPO__', str(self.id))
+
+        with open(Dir_cfg / f'{str(self.id)}.conf', 'w') as conf:
+            conf.write(conf_base)
+            
+
+    def eliminar_cfg_monitoreo_trafico(self) -> bool:
+        "Evalua si existe el archivo de configuracion para monitorear el trafico del equipo. Si el archivo existe se elimina y el metodo devuelve True, en caso contrario devuelve False"
+        archivo_conf = MONITOREO_TRAFICO_DIR / str(self.site.ciudad.id) / str(self.site.id) / f'{str(self.id)}.conf'
+        if archivo_conf.exists():
+            subprocess.run(f'rm {str(archivo_conf)}', shell=True)
+            return True
+        return False
