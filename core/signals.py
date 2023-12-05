@@ -1,6 +1,6 @@
 from django.db.models.signals import pre_save, post_save, pre_delete, m2m_changed
 from django.dispatch import receiver
-from .models import Ciudad, Site, Equipo
+from .models import Ciudad, Site, Equipo, MONITOREO_TRAFICO_DIR
 import nagios.models as nagios_models
 import subprocess
 
@@ -100,7 +100,17 @@ def actualiza_equipo(sender, instance:Equipo, **kwargs):
         # que se acaba de agregar al monitoreo
         equipos_hijos = Equipo.objects.filter(padres=instance, en_monitoreo=True)
         for equipo in equipos_hijos:
-                nagios_models.Host.objects.get(equipo=equipo).parents.add(host)
+            nagios_models.Host.objects.get(equipo=equipo).parents.add(host)
+
+        flag_reinicio_colector_trafico = False
+        if instance.monitorear_trafico:
+            instance.crear_cfg_monitoreo_trafico()
+            subprocess.run('systemctl restart telegraf.service', shell=True)    
+        else:
+            flag_reinicio_colector_trafico = instance.eliminar_cfg_monitoreo_trafico()
+
+        if flag_reinicio_colector_trafico:
+            subprocess.run('systemctl restart telegraf.service', shell=True)
 
         subprocess.run('systemctl restart nagios', shell=True)
 
