@@ -132,6 +132,7 @@ class Equipo(models.Model):
         conf_base = conf_base.replace('__SNMPCOM__', self.comunidad_snmp)
         conf_base = conf_base.replace('__NOMBRE__', self.site.ciudad.nombre)
         conf_base = conf_base.replace('__EQUIPO__', str(self.id))
+        conf_base = conf_base.replace('__SITE__', str(self.site.id))
 
         with open(Dir_cfg / f'{str(self.id)}.conf', 'w') as conf:
             conf.write(conf_base)
