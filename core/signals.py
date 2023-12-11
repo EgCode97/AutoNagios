@@ -75,6 +75,16 @@ def elimina_site_hostgroup(sender, instance:Site, **kwargs):
 # -----------------------------------------------------------------
 # Signals de Equipo
 # -----------------------------------------------------------------
+@receiver(pre_save, sender=Equipo)
+def Eliminar_configuracion_colector_snmp(sender, instance:Equipo, **kwargs):
+    "Eliminar los archivos del colector SNMP"
+    try:
+        equipo = Equipo.objects.get(id=instance.id)
+        equipo.eliminar_cfg_monitoreo_trafico()
+    except Equipo.DoesNotExist:
+        return
+
+
 @receiver(post_save, sender=Equipo)
 def actualiza_equipo(sender, instance:Equipo, **kwargs):
     "Toma el equipo modificado y si se marco como 'en monitoreo' cre un host de nagios"
